@@ -1,5 +1,5 @@
-import { getBlocks, getPage, createDevToBlog, getBlocksPage } from "@/lib/notion";
-import { convertToMarkdownNew } from "@/lib/notion";
+import { getPage, createDevToBlog, getBlocksPage } from "@/lib/notion";
+import { convertToMarkdownNew } from "@/lib/markdown";
 import { NextResponse } from "next/server";
 
 export const GET = async (req: Request, res: Response) => {

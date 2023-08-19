@@ -10,7 +10,8 @@ import { Text } from "@/components/Shared/NotionText";
 import React from "react";
 import { constant } from "@/helpers/constants";
 import { notion } from "../../../lib/notion";
-import axios from "axios";
+import { useUrl } from 'nextjs-current-url';
+
 
 const renderNestedList = (block: { [x: string]: any; type?: any; }) => {
   const { type } = block;
@@ -252,6 +253,8 @@ export const getStaticProps: GetStaticProps = async (context: any) => {
   const page = await getPage(id);
   const blocks = await getBlocks(id);
 
+  const { href: currentUrl, pathname } = useUrl() ?? {};
+
   if(page.properties.DevToPublish.checkbox === true) {
 
     try{
@@ -263,35 +266,36 @@ export const getStaticProps: GetStaticProps = async (context: any) => {
 
      console.log(apiUrl);
 
-      const response = await axios.get(apiUrl);
+     const response = await fetch(apiUrl);
 
-      console.log(response);
+     const post = await response.json()
 
-  if(response.status === 200) {
-    const data = response.data;
-    await axios.put(`${process.env.YOUR_SITE_URL}/${id}`, {...data}
-    );
+     console.log(post);
+
+  if(post.status === 200) {
+    const data = post.data;
+    await fetch(`${currentUrl}/api/post/${id}`, {
+      method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
   } else {
-    const details = await axios.get(`${process.env.YOUR_SITE_URL}/${id}`);
+    const details = await fetch(`${currentUrl}/api/post/${id}`);
+    const FullDetails = await details.json()
     const publish_DevTo_Id = await notion.pages.update({
       page_id: id,
       properties: {
         'DevToID' : {
-          number: parseInt(details.details.id)
+          number: parseInt(FullDetails.details.id)
         },
       }
     });
    }
-  } catch(error) {
-    const details = await axios.get(`${process.env.YOUR_SITE_URL}/${id}`);
-    const publish_DevTo_Id = await notion.pages.update({
-      page_id: id,
-      properties: {
-        'DevToID' : {
-          number: parseInt(details.details.id)
-        },
-      }
-    });
+  } catch(error:any) {
+    console.error('Error querying the notion database:', error.message);
+    throw new Error('Failed to create blog post with code :', error.response.status);
   }
 }
 
